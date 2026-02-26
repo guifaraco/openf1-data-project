@@ -1,0 +1,10 @@
+f1_transformations:
+    outputs:
+        dev:
+            type: duckdb
+            path: data/f1_analytics.duckdb
+            extensions:
+                - postgres
+                - parquet
+            threads: 6
+    target: dev

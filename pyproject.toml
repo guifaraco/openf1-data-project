@@ -1,0 +1,15 @@
+[project]
+name = "f1-analytics-project"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "dbt-core>=1.11.6",
+    "dbt-duckdb>=1.10.1",
+    "duckdb>=1.4.4",
+    "pandas>=3.0.1",
+    "psycopg2-binary>=2.9.11",
+    "python-dotenv>=1.2.1",
+    "requests>=2.32.5",
+]

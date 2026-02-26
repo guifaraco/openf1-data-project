@@ -1,0 +1,59 @@
+# === Security & Environment ===
+.env
+.envrc
+auth.json
+secrets.yaml
+
+# === Python & uv ===
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.python-version
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# === dbt ===
+# Ignore the compiled code and logs, but keep your models
+target/
+dbt_packages/
+logs/
+dbt_modules/
+
+# === dbt Local Config ===
+# Never commit your profiles as they often contain paths or credentials
+profiles.yml
+.user.yml
+dbt_user_config.yml
+
+# === Airflow ===
+# Airflow generates a lot of local state
+airflow.db
+airflow.cfg
+webserver_config.py
+standalone_admin_password.txt
+/logs/
+/plugins/
+
+# === Databases & Data ===
+# We never want to commit raw data or binary database files
+*.duckdb
+*.db
+*.sqlite
+*.parquet
+/data/
+/postgres_data/
+
+# === Docker ===
+.docker/
+# If you use docker-compose overrides
+docker-compose.override.yml
+
+# === System Files (Arch/Linux) ===
+.DS_Store
+Thumbs.db
+.cache/
+.local/
+*.swp
+*~

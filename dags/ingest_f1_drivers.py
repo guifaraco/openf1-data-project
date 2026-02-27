@@ -2,7 +2,8 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.bash import BashOperator
 from datetime import datetime, timedelta
-from scripts.setup_database import insert_from_dicts, get_latest_session_id
+from scripts.setup_database import insert_from_dicts
+from scripts.utils import get_active_session_key
 import requests
 
 # DAG Default Arguments
@@ -17,12 +18,12 @@ def ingest_drivers_from_api():
     """
     Fetches drivers for the latest session and performs an atomic Overwrite.
     """
-    # 1. Get the same anchor session
-    session_key = get_latest_session_id()
+    # Get the same anchor session
+    session_key = get_active_session_key()
     if not session_key:
         return
 
-    # 2. Fetch filtered data
+    # Fetch filtered data
     url = "https://api.openf1.org/v1/drivers"
     params = {"session_key": session_key}
     
@@ -55,13 +56,13 @@ with DAG(
     tags=['f1', 'automated'],
 ) as dag:
 
-    # Step 1: Ingest from API to Postgres
+    # Ingest from API to Postgres
     task_ingest_api = PythonOperator(
         task_id='ingest_drivers_api_to_postgres',
         python_callable=ingest_drivers_from_api,
     )
 
-    # Step 2: Export from Postgres to Parquet
+    # Export from Postgres to Parquet
     task_export_parquet = BashOperator(
         task_id='export_postgres_to_parquet',
         bash_command='python3 /opt/airflow/scripts/export_to_parquet.py',

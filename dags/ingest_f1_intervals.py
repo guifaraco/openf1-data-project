@@ -15,27 +15,31 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
 }
 
-def ingest_cars_from_api():
+def ingest_intervals_from_api():
     session_key = get_active_session_key()
     if not session_key:
+        print("❌ No session_key found.")
         return
 
     start_time, end_time = get_start_and_end_time(session_key)
-    
+    if not start_time or not end_time:
+        print(f"❌ Could not determine boundaries for session {session_key}")
+        return
+
     # Database Cleanup
     conn = get_connection()
     cur = conn.cursor()
-    print(f"🧹 Clearing car telemetry for session {session_key}...")
-    cur.execute("DELETE FROM raw.cars WHERE session_key = %s", (session_key,))
+    print(f"🧹 Clearing existing intervals for session {session_key}...")
+    cur.execute("DELETE FROM raw.intervals WHERE session_key = %s", (session_key,))
     conn.commit()
     cur.close()
     conn.close()
 
-    telemetry_window = timedelta(minutes=1)
+    interval_window = timedelta(minutes=5)
     current_start = start_time
 
     while current_start < end_time:
-        current_end = current_start + telemetry_window
+        current_end = current_start + interval_window
         params = {
             "session_key": session_key,
             "date>": current_start.isoformat(),
@@ -43,11 +47,11 @@ def ingest_cars_from_api():
         }
         
         try:
-            response = requests.get("https://api.openf1.org/v1/car_data", params=params, timeout=30)
+            response = requests.get("https://api.openf1.org/v1/intervals", params=params, timeout=20)
             
             if response.status_code == 429:
-                print(f"🛑 Telemetry Rate Limited. Sleeping 60s...")
-                time.sleep(60)
+                print(f"🛑 Rate Limited (429). Sleeping 40s...")
+                time.sleep(40)
                 continue
 
             if response.status_code == 404:
@@ -55,26 +59,26 @@ def ingest_cars_from_api():
                 continue
 
             response.raise_for_status()
-            car_data = response.json()
+            data = response.json()
 
-            if car_data:
-                for entry in car_data:
+            if data:
+                for entry in data:
                     entry['recorded_at'] = entry.pop('date')
-                insert_from_dicts("raw.cars", car_data)
-                print(f"🏎️ Saved {len(car_data)} telemetry rows [{current_start.strftime('%H:%M:%S')}]")
+                insert_from_dicts("raw.intervals", data)
+                print(f"✅ Saved {len(data)} intervals grid-wide [{current_start.strftime('%H:%M')}]")
             
             current_start = current_end
+            time.sleep(3)
+
+        except requests.exceptions.RequestException as e:
+            print(f"⚠️ API Error at {current_start}: {e}")
             time.sleep(5)
-
-        except Exception as e:
-            print(f"⚠️ Telemetry Error at {current_start}: {e}")
             current_start = current_end
-            time.sleep(10)
 
-    print(f"🏁 Telemetry complete for session {session_key}")
+    print(f"🏁 Intervals complete for session {session_key}")
 
 with DAG(
-    'f1_ingest_cars_staging',
+    'f1_ingest_intervals_staging',
     default_args=default_args,
     description='Full pipeline: API -> Postgres -> Parquet',
     schedule_interval='@daily',
@@ -86,7 +90,7 @@ with DAG(
     # Ingest from API to Postgres
     task_ingest_api = PythonOperator(
         task_id='ingest_cars_api_to_postgres',
-        python_callable=ingest_cars_from_api,
+        python_callable=ingest_intervals_from_api,
     )
 
     # Export from Postgres to Parquet

@@ -1,6 +1,5 @@
 import psycopg2
 import os
-import requests
 from psycopg2.extras import execute_values
 from dotenv import load_dotenv
 from pathlib import Path
@@ -15,26 +14,15 @@ def get_connection():
     Establishes a connection to the PostgreSQL database.
     Note: In Airflow, you'll eventually replace this with PostgresHook.
     """
+    db_host = os.getenv("POSTGRES_HOST", "localhost")
+
     return psycopg2.connect(
-        host=os.getenv("POSTGRES_HOST"),
+        host=db_host,
         database=os.getenv("POSTGRES_DB"),
         user=os.getenv("POSTGRES_USER"),
         password=os.getenv("POSTGRES_PASSWORD"),
         port=os.getenv("POSTGRES_PORT", "5432")
     )
-
-# 2. API UTILITIES
-def get_latest_session_id():
-    """Shared helper to find the current 'anchor' session."""
-    url = "https://api.openf1.org/v1/sessions?session_key=latest"
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
-        return data[0]['session_key'] if data else None
-    except Exception as e:
-        print(f"❌ API Error: {e}")
-        return None
 
 def setup_infrastructure():
     """
@@ -72,6 +60,17 @@ def setup_infrastructure():
             throttle INT,
             ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS raw.intervals (
+            recorded_at TIMESTAMP,
+            driver_number INT,
+            gap_to_leader DECIMAL,
+            interval DECIMAL,
+            meeting_key INT,
+            session_key INT,
+            ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
         """
     ]
     
@@ -103,14 +102,14 @@ def insert_from_dicts(table_name, data_dicts, batch_size=5000, delete_key=None):
         conn = get_connection()
         cur = conn.cursor()
 
-        # 1. SOFT TRUNCATE
+        # SOFT TRUNCATE
         if delete_key:
             col, val = delete_key
             print(f"🧹 Cleaning up {table_name} for {col}={val}...")
             # %s for safety against SQL injection
             cur.execute(f"DELETE FROM {table_name} WHERE {col} = %s", (val,))
 
-        # 2. INSERT STEP
+        # INSERT STEP
         columns = list(data_dicts[0].keys())
         cols_with_meta = columns + ["ingested_at"]
         now = datetime.now()

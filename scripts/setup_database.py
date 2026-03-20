@@ -12,9 +12,8 @@ load_dotenv(dotenv_path=env_path)
 def get_connection():
     """
     Establishes a connection to the PostgreSQL database.
-    Note: In Airflow, you'll eventually replace this with PostgresHook.
     """
-    db_host = os.getenv("POSTGRES_HOST", "localhost")
+    db_host = os.getenv("POSTGRES_HOST", "postgres")
 
     return psycopg2.connect(
         host=db_host,

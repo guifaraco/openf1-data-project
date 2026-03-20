@@ -27,13 +27,14 @@ This project automates the ingestion of Formula 1 data from the OpenF1 API, stor
 3. **Infrastructure:** Run the setup script to create Postgres schemas:
 
     ```bash
-    uv run python scripts/setup_database.py
+        uv run python scripts/setup_database.py
     ```
 
 4. **Containers:** Start Airflow
 
     ```bash
-     docker compose up -d --build
+        docker compose up airflow-init
+        docker compose up -d --build
     ```
 
 5. **Profiles:** Create a `profiles.yml` file based on `profiles.yml.example` at conf folder
@@ -44,7 +45,7 @@ This project automates the ingestion of Formula 1 data from the OpenF1 API, stor
 - Transformation: Once the Parquet file is generated in `data/`, run dbt
 
     ```bash
-     uv run dbt run --profiles-dir conf
+        uv run dbt run --profiles-dir conf
     ```
 
 ### Add New Package Workflow
@@ -55,9 +56,6 @@ Whenever you add a new package locally, follow this ritual:
     # 1. Add the package to your local environment
     uv add <package_name>
 
-    # 2. Export the lockfile to a standard requirements.txt for Docker
-    uv export --format requirements-txt > requirements.txt
-
-    # 3. Rebuild the Docker image to bake in the new package
+    # 2. Rebuild the Docker image to bake in the new package
     docker compose up -d --build
 ```

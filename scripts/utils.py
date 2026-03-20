@@ -1,5 +1,5 @@
 from datetime import datetime
-from config import ACTIVE_SESSION_KEY
+from .config import ACTIVE_SESSION_KEY
 import requests
 
 def get_active_session_key():

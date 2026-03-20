@@ -44,4 +44,5 @@ def export_table_to_parquet(table_name, file_name):
     print(f"✅ Success: {table_name} exported.")
 
 if __name__ == "__main__":
-    export_table_to_parquet('drivers', 'raw_drivers')
+    # export_table_to_parquet('drivers', 'raw_drivers')
+    print(env_path)

@@ -23,7 +23,6 @@ x-airflow-common: &airflow-common
         - ./plugins:/opt/airflow/plugins
         - ./scripts:/opt/airflow/scripts
         - ./data:/opt/airflow/data
-        - ./requirements.txt:/requirements.txt
     user: "${AIRFLOW_UID}:0"
 
 services:
